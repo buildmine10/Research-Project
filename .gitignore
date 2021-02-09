@@ -1,0 +1,5 @@
+Images/
+Resized Images/
+ModifiedVGG16.pt
+ModifiedVGG16UsingRandom.pt
+ModifiedVGG16UsingRandom0.9.pt
