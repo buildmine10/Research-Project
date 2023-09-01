@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torchvision.models as models
+import numpy as np
 
 #Use VerboseExecution to get activations from all named layers
 #Named layers are the important ones
@@ -26,6 +27,8 @@ class VerboseExecution(nn.Module):
         #        lambda layer, _, output: print(f"{layer.__name__}: {output.size()}")
         #    )
 
+        def putActivationsInFile(layer, _, output):
+            np.save("Correlations/" + layer.__name__ , output.cpu().data.numpy())
 
         #I need to register a hook for every named layer in the model
         #If a layer has named children I need to go in those children and add hooks
@@ -33,9 +36,11 @@ class VerboseExecution(nn.Module):
             for name, layer in module.named_children():
                 if(len(list(layer.named_children())) == 0):
                     layer.__name__ = name #The layer's name should already be (name), right? Why does this need to be done?
-                    layer.register_forward_hook(
-                        lambda layer, _, output: self.activations.append(output)
-                    )
+                    if isinstance(layer, nn.Linear):
+                        layer.register_forward_hook(
+                            lambda layer, _, output: self.activations.append(output)
+                            #putActivationsInFile
+                        )
                 addHook(layer)
         addHook(self.model)
 
@@ -60,8 +65,11 @@ class VerboseExecution(nn.Module):
 #EXAMPLE
 
 #verbose_vgg = VerboseExecution(models.vgg16())
-#dummy_input = torch.ones(10, 3, 224, 224)
-
+#dummy_input = torch.rand(250, 3, 224, 224)
+#
 #_ = verbose_vgg(dummy_input)
 #for layer in verbose_vgg.activations:
 #    print(layer.size())
+#
+#a0 = np.load("Correlations/0.npy")
+#print(a0.shape)

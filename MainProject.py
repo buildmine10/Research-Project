@@ -19,18 +19,22 @@ import numpy as np
 #This is a temporary function
 #Its content should just be free standing code
 def makeModifiedModel(threshold):
-    dummy_input = torch.rand(250, 3, 224, 224)
     
+    dummy_input = torch.rand(255, 3, 224, 224)
+    #print(len(files[::1160]))
+    #pic_input = ValidatingModel.loadImages("D:/Python programs/Research Project/Resized Images", files[::1160])#255 images
+
     VGG16 = VerboseExecution(models.vgg16(pretrained=True).eval())
 
+    print("Running Input")
     VGG16(dummy_input)
+    #VGG16(pic_input)
 
-    
-    #input = ValidatingModel.loadImages("D:/Python programs/Research Project/Resized Images", files[::900])#326 images
+
     print("Getting correlations")
-    #VGG16(input)
-    linear1Correlations = getLayerCorrelation(VGG16, 32)
-    linear2Correlations = getLayerCorrelation(VGG16, 35)
+    
+    linear1Correlations = getLayerCorrelation(VGG16, 0)
+    linear2Correlations = getLayerCorrelation(VGG16, 1)
     
     #linear1Correlations = []
     #linear2Correlations = []
@@ -80,22 +84,92 @@ def makeModifiedModel(threshold):
     #print(myModel)
     return myModel
 
+def testModel(model):
+
+    #dummy_input = torch.rand(253, 3, 224, 224)
+    #print(len(files[::1160]))
+    pic_input = ValidatingModel.loadImages("D:/Python programs/Research Project/Resized Images", files[::1160])#255 images
+
+    model = VerboseExecution(models.vgg16(pretrained=True).eval())
+
+    print("Running Input")
+    #model(dummy_input)
+    model(pic_input)
+
+
+    print("Getting correlations")
+    
+    linear1Correlations = getLayerCorrelation(model, 0)
+    linear2Correlations = getLayerCorrelation(model, 1)
+
+    #linear1AverageCorrelation = np.sum(np.abs(linear1Correlations)) / (linear1Correlations.shape[0] * linear1Correlations.shape[1])
+    #linear2AverageCorrelation = np.sum(np.abs(linear2Correlations)) / (linear2Correlations.shape[0] * linear2Correlations.shape[1])
+    linear1AverageCorrelation = np.sum(linear1Correlations * linear1Correlations > 0) / (linear1Correlations.shape[0] * linear1Correlations.shape[1])
+    linear2AverageCorrelation = np.sum(linear2Correlations * linear2Correlations > 0) / (linear2Correlations.shape[0] * linear2Correlations.shape[1])
+
+    print(linear1AverageCorrelation)
+    print(linear2AverageCorrelation)
+
+
+f = open("output.txt", "a")
+f.write("start")
+f.write("\n")
+f.write("\n")
+f.write("\n")
+f.write("\n")
+f.close()
+
 print("Loading")
 folderPath = "D:/Python programs/Research Project/Resized Images"
 files = ValidatingModel.getFiles(folderPath, 0, 646181)
 
-#myModel = makeModifiedModel(0.8)
-#torch.save(myModel, "D:/Python programs/Research Project/ModifiedVGG16UsingRandom0.8.pt")
+#myModel = makeModifiedModel(0.9)
+#torch.save(myModel, "D:/Python programs/Research Project/ModifiedVGG16UsingRandom0.9.pt")
+
+#myModel.cuda()
+#f = open("output.txt", "a")
+#f.write(str(myModel))
+
 
 #vgg16 = models.vgg16(pretrained=True).eval()
 #vgg16.cuda()
 
 
-myModel = torch.load("D:/Python programs/Research Project/ModifiedVGG16UsingRandom.pt")
-myModel.eval().cuda()
+#myModel = torch.load("D:/Python programs/Research Project/ModifiedVGG16UsingRandom0.9V2.pt")
+#myModel.eval()
 
-print("Evaluating")
-print("Modified", ValidatingModel.evaluateModel(myModel, folderPath, files))
+#testModel(myModel)
+
+
+#print("Evaluating")
+#print(len(files[::1150]))
+#dummy_input = torch.rand(250, 3, 224, 224)
+#pic_input = ValidatingModel.loadImages("D:/Python programs/Research Project/Resized Images", files[::1150])#308 images
+#myModel(pic_input)
+#print("done")
+#print("Modified", ValidatingModel.evaluateModel(myModel, folderPath, files))
 
 #print("Evaluating")
 #print("Original", ValidatingModel.evaluateModel(vgg16, folderPath, files))
+
+
+f = open("output.txt", "a")
+print("starting Random 0.9")
+#myModel = makeModifiedModel(0.8)
+#torch.save(myModel, "D:/Python programs/Research Project/ModifiedVGG16UsingRandom0.8V2.pt")
+myModel = torch.load("D:/Python programs/Research Project/ModifiedVGG16UsingRandom0.9V2.pt")
+myModel.eval()
+myModel.cuda()
+f.write(str(myModel))
+f.write("\n")
+print("Evaluating")
+evaluation = str(ValidatingModel.evaluateModel(myModel, folderPath, files))
+f.write("Random 0.9   ")
+f.write(evaluation)
+f.write("\n")
+f.write("\n")
+f.write("\n")
+f.write("\n")
+print("Random 0.9", evaluation)
+f.close()
+testModel(myModel)

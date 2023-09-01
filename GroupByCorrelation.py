@@ -19,7 +19,14 @@ from CorrelatingActivations import getLayerCorrelation
 
 
 
-flatten = lambda t: [item for sublist in t for item in sublist]
+#flatten = lambda t: [item for sublist in t for item in sublist]
+
+def isSubsetOfAnySet(setToTest, groupOfSets):
+
+    for set in groupOfSets:
+        if setToTest.issubset(set) and setToTest != set:
+            return True
+    return False
 
 def doAllHaveHighCorrelation(array, correlations):
     for a, b in itertools.combinations(array, 2):
@@ -36,11 +43,12 @@ def makeGroupings(layerCorrelations, threshold):#outputs a list of lists that co
     shouldMerge = torch.tensor(shouldMerge)
     shouldMergeSums = torch.tensor(shouldMergeSums)
 
+    #makes all the groups. Including groups that are a subset of larger groups
     groups = []
     for i in range(2, numberOfNeurons + 1):
-        validNeurons = ((shouldMergeSums >= i) * torch.tensor(np.indices((numberOfNeurons,))[0] + 1))#filters neurons to be combined based on the number of neurons each neuron is supposed to merge with.
+        validNeurons = ((shouldMergeSums >= i) * torch.tensor(np.indices((numberOfNeurons,))[0] + 1))#filters neurons to be combined based on the number of neurons each neuron is supposed to merge with. (if a neuron only merges with two other, don't check for the set of three it would be a part of. Because such a group doesn't exist)
         validNeurons = validNeurons[validNeurons != 0] - 1
-        if(validNeurons.size(0) == 0):
+        if(validNeurons.size(0) == 0):#If the possiblity of a group of size "i" doesn't exist stop checking for groups
             break
         print("group size: ", i, "valid neurons: ", validNeurons.size(0))
         pbar = tqdm(total=math.comb(validNeurons.size(0), i))
@@ -50,13 +58,25 @@ def makeGroupings(layerCorrelations, threshold):#outputs a list of lists that co
                 groups.append(group)
             pbar.update(1)
         pbar.close()
-        
-
+    
+    #finds groups of one that are not a subset of a larger group
+    #these two lines find the indicies of neurons that are only valid to merge with themselves.
     leftOverNeurons = ((shouldMergeSums == 1) * torch.tensor(np.indices((numberOfNeurons,))[0] + 1))
     leftOverNeurons = leftOverNeurons[leftOverNeurons != 0] - 1
 
-    groups += [(neuron.tolist(),) for neuron in leftOverNeurons]
+    groups += [(neuron.tolist(),) for neuron in leftOverNeurons]#adds the groups of one to the list of groups
 
+    #to make changed
+    #filter out any groups that are a subset of any other group
+    groups = [frozenset(group) for group in groups]
+    groupsFilter = [not isSubsetOfAnySet(group, groups) for group in groups]
+    tempGroups = []
+    for i in range(len(groups)):
+        if groupsFilter[i]:
+            tempGroups.append(tuple(groups[i]))
+    #groups = [tuple(group) for group in groups]
+    groups = tempGroups
+    del tempGroups, groupsFilter
     return groups
 
 
